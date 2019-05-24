@@ -1,6 +1,8 @@
 from django.conf.urls import url
 from . import views
 
+app_name = 'movies'
+
 urlpatterns = [
     url(r'^movies/$', views.MoviesList.as_view(), name='movies_list'),
     url(r'^movies/(?P<pk>\d+)/$',

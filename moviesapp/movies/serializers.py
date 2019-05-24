@@ -24,10 +24,14 @@ class MovieSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    movie_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['user', 'body', 'movie', ]
+        fields = ['user', 'body', 'movie', 'created', 'movie_url']
+
+    def get_movie_url(self, obj):
+        return obj.movie.get_absolute_url()
 
 
 class TitleSerializer(serializers.ModelSerializer):

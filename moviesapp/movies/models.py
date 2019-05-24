@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 
 # Create Movie models based on data returned by omdb.api
@@ -30,7 +31,10 @@ class Movie(models.Model):
     Created = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return self.Title
+        return 'Movie ID {}, Title: {}.'.format(str(self.pk), self.Title)
+
+    def get_absolute_url(self):
+        return reverse('movies:movie_detail', args=[self.pk])
 
 
 class Rating(models.Model):
