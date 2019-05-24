@@ -39,3 +39,13 @@ class TitleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = ['Title', ]
+
+
+class TopSerializer(serializers.Serializer):
+
+    id = serializers.CharField(max_length=200)
+    total_comments = serializers.CharField(max_length=200)
+    rank = serializers.SerializerMethodField()
+
+    def get_rank(self, obj):
+        return obj.Title  # TODO Change for place in the rank

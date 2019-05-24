@@ -1,5 +1,6 @@
 import os
 import requests
+from django.db.models import Count, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import exceptions
 from rest_framework import generics
@@ -8,7 +9,9 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from .models import Comment, Movie
 from .pagination import CommentsLimitPagination, MoviesLimitPagination
-from .serializers import CommentSerializer, MovieSerializer, TitleSerializer
+from .serializers import (
+    CommentSerializer, MovieSerializer, TitleSerializer, TopSerializer
+)
 
 
 class MethodSerializerView(object):
@@ -104,3 +107,12 @@ class CommentsList(generics.ListCreateAPIView):
     ordering_fields = ('movie', 'user', 'created')
     ordering = ('created', 'user')
     pagination_class = CommentsLimitPagination
+
+
+class TopList(generics.ListAPIView):
+
+    serializer_class = TopSerializer
+
+    def get_queryset(self):
+        top_movies = Movie.objects.annotate(total_comments=Count('comment')).order_by('-total_comments')
+        return top_movies
