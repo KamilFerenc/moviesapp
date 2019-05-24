@@ -1,9 +1,11 @@
 import os
 import requests
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import exceptions
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.filters  import SearchFilter, OrderingFilter
 from .models import Comment, Movie
 from .serializers import CommentSerializer, MovieSerializer, TitleSerializer
 
@@ -87,3 +89,7 @@ class MovieDetail(generics.RetrieveAPIView):
 class CommentsList(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filterset_fields = ('movie', 'user')
+    ordering_fields = ('movie', 'user', 'created')
+    ordering = ('created', 'user')
