@@ -24,12 +24,10 @@ class MovieSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    movie = serializers.HyperlinkedRelatedField(view_name='movies_detail',
-                                                read_only=True)
 
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ['user', 'body', 'movie', ]
 
 
 class TitleSerializer(serializers.ModelSerializer):
