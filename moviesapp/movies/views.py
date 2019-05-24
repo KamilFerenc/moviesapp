@@ -114,5 +114,15 @@ class TopList(generics.ListAPIView):
     serializer_class = TopSerializer
 
     def get_queryset(self):
-        top_movies = Movie.objects.annotate(total_comments=Count('comment')).order_by('-total_comments')
-        return top_movies
+        top_movies = Movie.objects.annotate(
+            total_comments=Count('comment')).order_by('-total_comments')
+        data = []
+        for i in top_movies:
+            dictionary = {}
+            # add 1 because instead first movie in rank will have number 0
+            rank = top_movies.filter(
+                total_comments__gt=i.total_comments).count() + 1
+            dictionary['rank'] = rank
+            dictionary['movie'] = i
+            data.append(dictionary)
+        return data
