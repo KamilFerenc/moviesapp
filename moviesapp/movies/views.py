@@ -4,8 +4,8 @@ from rest_framework import exceptions
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.response import Response
-from .models import Movie
-from .serializers import MovieSerializer, TitleSerializer
+from .models import Comment, Movie
+from .serializers import CommentSerializer, MovieSerializer, TitleSerializer
 
 
 class MethodSerializerView(object):
@@ -31,7 +31,7 @@ class MethodSerializerView(object):
         raise exceptions.MethodNotAllowed(self.request.method)
 
 
-class MoviesList(MethodSerializerView, generics.ListAPIView):
+class MoviesList(MethodSerializerView, generics.ListCreateAPIView):
     queryset = Movie.objects.all()
     method_serializer_classes = {
         'GET': MovieSerializer,
@@ -59,7 +59,8 @@ class MoviesList(MethodSerializerView, generics.ListAPIView):
                 serializer = MovieSerializer(data=response.json())
                 if serializer.is_valid():
                     serializer.save()
-                    return Response(serializer.data)
+                    return Response(serializer.data,
+                                    status=status.HTTP_201_CREATED)
                 else:
                     message = 'Problem with serializing data from omdbi'
                     return Response(
@@ -81,3 +82,8 @@ class MoviesList(MethodSerializerView, generics.ListAPIView):
 class MovieDetail(generics.RetrieveAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
+
+
+class CommentsList(generics.ListCreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
