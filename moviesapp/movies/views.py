@@ -39,6 +39,14 @@ class MoviesList(MethodSerializerView, generics.ListCreateAPIView):
         'GET': MovieSerializer,
         'POST': TitleSerializer,
     }
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filterset_fields = {
+        'Title': ['icontains', ],
+        'Year': ['exact', 'gt', 'lte', ],
+        'Genre': ['icontains', ],
+    }
+    ordering_fields = ('Year', 'Title')
+    ordering = ('pk',)
 
     def post(self, request):
         # OMDB api key
