@@ -1,7 +1,8 @@
+import datetime
 import os
 import requests
-from django.db.models import Count, Sum
-from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Count, Q
+from django_filters.rest_framework import DjangoFilterBackend, FilterSet
 from rest_framework import exceptions
 from rest_framework import generics
 from rest_framework import status
@@ -113,9 +114,32 @@ class TopList(generics.ListAPIView):
 
     serializer_class = TopSerializer
 
-    def get_queryset(self):
-        top_movies = Movie.objects.annotate(
-            total_comments=Count('comment')).order_by('-total_comments')
+    def get_queryset(self, since=None, to=None):
+        # certain range of date
+        if since and to:
+            top_movies = \
+                Movie.objects.annotate(
+                    total_comments=Count('comments', filter=Q(
+                        comments__created__gt=since,
+                        comments__created__lte=to))).order_by('-total_comments')
+        # specified range since of the date
+        elif since:
+            top_movies = \
+                Movie.objects.annotate(
+                    total_comments=Count('comments', filter=Q(
+                        comments__created__gt=since))).order_by('-total_comments')
+        # specified range to the date
+        elif to:
+            top_movies = \
+                Movie.objects.annotate(
+                    total_comments=Count('comments', filter=Q(
+                        comments__created__lte=to))).order_by('-total_comments')
+        # not specified range of date
+        else:
+            top_movies = \
+                Movie.objects.annotate(
+                    total_comments=Count(
+                        'comments')).order_by('-total_comments')
         data = []
         for i in top_movies:
             dictionary = {}
@@ -126,3 +150,38 @@ class TopList(generics.ListAPIView):
             dictionary['movie'] = i
             data.append(dictionary)
         return data
+
+    def get(self, request):
+        filter_params = request.query_params
+        if filter_params:
+            if filter_params.get('since'):
+                try:
+                    since = datetime.datetime.strptime(filter_params.get('since'),
+                                                       '%Y-%m-%d')
+                except ValueError:
+                    since = None
+                    message = 'Incorrect date format - {}'.format(filter_params.get('since'))
+                    return Response(data={"Error": message},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                since = None
+            if filter_params.get('to'):
+                try:
+                    to = datetime.datetime.strptime(filter_params.get('to'),
+                                                       '%Y-%m-%d')
+                except ValueError:
+                    to = None
+                    message = 'Incorrect date format - {}'.format(filter_params.get('to'))
+                    return Response(data={"Error": message},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                to = None
+
+            data = self.get_queryset(since=since, to=to)
+            serializer = TopSerializer(data, many=True)
+            return Response(serializer.data)
+
+        else:
+            data = self.get_queryset()
+            serializer = TopSerializer(data, many=True)
+            return Response(serializer.data)

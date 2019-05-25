@@ -52,7 +52,7 @@ class Comment(models.Model):
     user = models.CharField(max_length=15)
     body = models.TextField()
     created = models.DateField(auto_now_add=True)
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='comments')
 
     def __str__(self):
         return 'Comment by {} - movie {}'.format(self.user, self.movie.Title)
