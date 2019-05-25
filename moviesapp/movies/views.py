@@ -114,36 +114,29 @@ class TopList(generics.ListAPIView):
 
     serializer_class = TopSerializer
 
-    def get_queryset(self, since=None, to=None):
-        # certain range of date
-        if since and to:
-            top_movies = \
-                Movie.objects.annotate(
-                    total_comments=Count('comments', filter=Q(
-                        comments__created__gt=since,
-                        comments__created__lte=to))).order_by('-total_comments')
-        # specified range since of the date
-        elif since:
-            top_movies = \
-                Movie.objects.annotate(
-                    total_comments=Count('comments', filter=Q(
-                        comments__created__gt=since))).order_by('-total_comments')
-        # specified range to the date
-        elif to:
-            top_movies = \
-                Movie.objects.annotate(
-                    total_comments=Count('comments', filter=Q(
-                        comments__created__lte=to))).order_by('-total_comments')
-        # not specified range of date
-        else:
-            top_movies = \
-                Movie.objects.annotate(
-                    total_comments=Count(
-                        'comments')).order_by('-total_comments')
+    # TODO refactor code (to, since) in necessary to test by browsers
+    # TODO get_query set is calling twice in by browsers request
+    # Set default 'since' date as 2000-01-01,
+    # assume before this date there isn't any comment.
+    # If in query params exists proper 'since' date value is override
+    since = datetime.date(2000, 1, 1)
+    # Assume ended range os date 'today' if in query params exists proper
+    # 'to' date value is override
+    to = datetime.date.today()
+
+    def get_queryset(self, since=since, to=to):
+        top_movies = \
+            Movie.objects.annotate(
+                total_comments=Count('comments', filter=Q(
+                    comments__created__gt=since,
+                    comments__created__lte=to))).order_by('-total_comments')
         data = []
+        # create list with dictionary, every dictionary represent particular
+        # movie object with rank position
+        # {'movie': Movie(models), 'rank': rank_position(int)
         for i in top_movies:
             dictionary = {}
-            # add 1 because instead first movie in rank will have number 0
+            # add 1 - in other case the ranking would have been started from 0
             rank = top_movies.filter(
                 total_comments__gt=i.total_comments).count() + 1
             dictionary['rank'] = rank
@@ -154,33 +147,36 @@ class TopList(generics.ListAPIView):
     def get(self, request):
         filter_params = request.query_params
         if filter_params:
+
+            # date range has been specified
             if filter_params.get('since'):
                 try:
-                    since = datetime.datetime.strptime(filter_params.get('since'),
-                                                       '%Y-%m-%d')
+                    since = datetime.datetime.strptime(
+                        filter_params.get('since'), '%Y-%m-%d')
                 except ValueError:
-                    since = None
-                    message = 'Incorrect date format - {}'.format(filter_params.get('since'))
+                    message = 'Incorrect date format - {}'.format(
+                        filter_params.get('since'))
                     return Response(data={"Error": message},
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
-                since = None
+                since = self.since
+
             if filter_params.get('to'):
-                try:
+                try:  # check if 'to' parameter has correct format
                     to = datetime.datetime.strptime(filter_params.get('to'),
-                                                       '%Y-%m-%d')
-                except ValueError:
-                    to = None
+                                                    '%Y-%m-%d')
+                except ValueError: # check if 'since' parameter has correct format
                     message = 'Incorrect date format - {}'.format(filter_params.get('to'))
                     return Response(data={"Error": message},
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
-                to = None
+                to = self.to
 
             data = self.get_queryset(since=since, to=to)
             serializer = TopSerializer(data, many=True)
             return Response(serializer.data)
 
+        # date range hasn't been specified
         else:
             data = self.get_queryset()
             serializer = TopSerializer(data, many=True)

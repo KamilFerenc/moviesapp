@@ -46,12 +46,16 @@ class TopSerializer(serializers.Serializer):
     id = serializers.SerializerMethodField()
     total_comments = serializers.SerializerMethodField()
     rank = serializers.SerializerMethodField()
+    movie_url = serializers.SerializerMethodField()
 
     def get_id(self, obj):
-        return obj['movie'].Title  # TODO Change for place in the rank
+        return obj['movie'].pk
 
     def get_total_comments(self, obj):
         return obj['movie'].total_comments
 
     def get_rank(self, obj):
         return obj['rank']
+
+    def get_movie_url(self,obj):
+        return obj['movie'].get_absolute_url()
