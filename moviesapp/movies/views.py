@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from .models import Comment, Movie
+from .pagination import CommentsLimitPagination, MoviesLimitPagination
 from .serializers import CommentSerializer, MovieSerializer, TitleSerializer
 
 
@@ -47,6 +48,7 @@ class MoviesList(MethodSerializerView, generics.ListCreateAPIView):
     }
     ordering_fields = ('Year', 'Title')
     ordering = ('pk',)
+    pagination_class = MoviesLimitPagination
 
     def post(self, request):
         # OMDB api key
@@ -101,3 +103,4 @@ class CommentsList(generics.ListCreateAPIView):
     filterset_fields = ('movie', 'user')
     ordering_fields = ('movie', 'user', 'created')
     ordering = ('created', 'user')
+    pagination_class = CommentsLimitPagination
