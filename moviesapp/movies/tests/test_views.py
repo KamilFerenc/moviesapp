@@ -89,3 +89,63 @@ class TestMoviesList(APITestCase):
         assert resp.status_code == 200
 
 
+class TestCommentsList(APITestCase):
+
+    def setUp(self):
+        self.movie = mixer.blend('movies.Movie', Title='The Dawn Wall')
+        self.comment_data = {
+            'user': 'Test User',
+            'comment': 'Test comment description.',
+            'movie': self.movie.pk
+        }
+        self.url = reverse('movies:comments-list')
+
+    def test_CommentList_post_valid_data(self):
+        # check if comment exists in DB before request
+        user = self.comment_data['user']
+        comment = self.comment_data['comment']
+        movie = self.comment_data['movie']
+        check_comment_in_db = \
+            models.Comment.objects.filter(user=user, comment=comment).exists()
+        assert check_comment_in_db is False
+
+        req = APIRequestFactory().post(self.url, self.comment_data)
+        resp = views.CommentsList.as_view()(req)
+        # check if comment exists in DB after request
+        check_comment_in_db = \
+            models.Comment.objects.filter(user=user, comment=comment).exists()
+        assert user and movie and comment in resp.data.values()
+        assert resp.status_code == 201
+        assert check_comment_in_db is True
+
+    def test_CommentList_post_invalid_data(self):
+
+        invalid_data = {**self.comment_data,
+                        'comment': '',
+                        'user': ''}
+
+        user = self.comment_data['user']
+        comment = self.comment_data['comment']
+        movie = self.comment_data['movie']
+        # check if comment exists in DB before request
+        check_comment_in_db = \
+            models.Comment.objects.filter(user=user, comment=comment).exists()
+        assert check_comment_in_db is False
+
+        req = APIRequestFactory().post(self.url, invalid_data)
+        resp = views.CommentsList.as_view()(req)
+
+        # check if comment exists in DB after request
+        check_comment_in_db = \
+            models.Comment.objects.filter(user=user, comment=comment).exists()
+        assert resp.status_code == 400
+        assert check_comment_in_db is False
+
+    def test_CommentList_get(self):
+        # create 5 comment object and save in DB
+        mixer.cycle(5).blend('movies.Comment', movie=self.movie)
+        req = APIRequestFactory().get(self.url)
+        resp = views.CommentsList.as_view()(req)
+        assert resp.status_code == 200
+        assert resp.data['count'] == 5, \
+            'Should return 5 - 5 objects have been created (mixer.cycle(5)'
