@@ -3,7 +3,7 @@ from .models import Comment, Movie
 
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ['user', 'body', 'created', 'movie']
+    list_display = ['user', 'comment', 'created', 'movie']
     list_filter = ['movie', 'created']
 
 

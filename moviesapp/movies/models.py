@@ -14,7 +14,7 @@ class Movie(models.Model):
     Writer = models.TextField()
     Actors = models.TextField()
     Plot = models.TextField()
-    Language = models.CharField(max_length=40)
+    Language = models.CharField(max_length=100)
     Country = models.CharField(max_length=40)
     Awards = models.TextField()
     Poster = models.CharField(max_length=1000)
@@ -25,16 +25,16 @@ class Movie(models.Model):
     Type = models.CharField(max_length=20)
     DVD = models.CharField(max_length=20)
     BoxOffice = models.CharField(max_length=40)
-    Production = models.CharField(max_length=40)
+    Production = models.CharField(max_length=100)
     Website = models.CharField(max_length=100)
     Response = models.CharField(max_length=20)
     Created = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return 'Movie ID {}, Title: {}.'.format(str(self.pk), self.Title)
+        return 'ID {}: {}'.format(str(self.pk), self.Title)
 
     def get_absolute_url(self):
-        return reverse('movies:movie_detail', args=[self.pk])
+        return reverse('movies:movie-detail', args=[self.pk])
 
 
 class Rating(models.Model):
@@ -50,9 +50,10 @@ class Rating(models.Model):
 # Create comments Models for movies
 class Comment(models.Model):
     user = models.CharField(max_length=15)
-    body = models.TextField()
+    comment = models.TextField()
     created = models.DateField(auto_now_add=True)
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='comments')
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE,
+                              related_name='comments')
 
     def __str__(self):
         return 'Comment by {} - movie {}'.format(self.user, self.movie.Title)
