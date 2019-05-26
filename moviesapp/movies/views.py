@@ -3,16 +3,17 @@ import os
 import requests
 from django.db.models import Count, Q
 from django_filters.rest_framework import DjangoFilterBackend, FilterSet
+from django.urls import reverse
 from rest_framework import exceptions
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from .models import Comment, Movie
 from .pagination import CommentsLimitPagination, MoviesLimitPagination
-from .serializers import (
-    CommentSerializer, MovieSerializer, TitleSerializer, TopSerializer
-)
+from .serializers import (CommentSerializer, MovieSerializer,
+                          MovieSerializerSave, TitleSerializer, TopSerializer)
 
 
 class MethodSerializerView(object):
@@ -36,6 +37,19 @@ class MethodSerializerView(object):
                 return serializer_cls
 
         raise exceptions.MethodNotAllowed(self.request.method)
+
+
+class IndexView(APIView):
+
+    def get(self, request):
+        movies_url = request.build_absolute_uri(reverse('movies:movies-list'))
+        comments_url = request.build_absolute_uri(reverse('movies:comments-list'))
+        top_url = request.build_absolute_uri(reverse('movies:top'))
+        return Response(data={
+            'movies': movies_url,
+            'comments': comments_url,
+            'top': top_url
+        })
 
 
 class MoviesList(MethodSerializerView, generics.ListCreateAPIView):
@@ -72,13 +86,13 @@ class MoviesList(MethodSerializerView, generics.ListCreateAPIView):
         if response.status_code == requests.codes.ok and \
                 response.json()['Response'] == 'True':
             if not Movie.objects.filter(Title=response_json['Title']).exists():
-                serializer = MovieSerializer(data=response.json())
+                serializer = MovieSerializerSave(data=response.json())
                 if serializer.is_valid():
                     serializer.save()
                     return Response(serializer.data,
                                     status=status.HTTP_201_CREATED)
                 else:
-                    message = 'Problem with serializing data from omdbi'
+                    message = 'Problem with serializing data from omdb.'
                     return Response(
                         data={'Error': message},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -114,14 +128,13 @@ class TopList(generics.ListAPIView):
 
     serializer_class = TopSerializer
 
-    # TODO refactor code (to, since) in necessary to test by browsers
-    # TODO get_query set is calling twice in by browsers request
+    # TODO refactor code (to, since) is necessary to test in browsers
+    # TODO get_query_set is called twice in browsers request
     # Set default 'since' date as 2000-01-01,
     # assume before this date there isn't any comment.
     # If in query params exists proper 'since' date value is override
     since = datetime.date(2000, 1, 1)
-    # Assume ended range os date 'today' if in query params exists proper
-    # 'to' date value is override
+    # If second query param 'to' is missing, date is set to today's
     to = datetime.date.today()
 
     def get_queryset(self, since=since, to=to):
@@ -150,7 +163,7 @@ class TopList(generics.ListAPIView):
 
             # date range has been specified
             if filter_params.get('since'):
-                try:
+                try:  # check if 'since' parameter has correct format
                     since = datetime.datetime.strptime(
                         filter_params.get('since'), '%Y-%m-%d')
                 except ValueError:
@@ -165,7 +178,7 @@ class TopList(generics.ListAPIView):
                 try:  # check if 'to' parameter has correct format
                     to = datetime.datetime.strptime(filter_params.get('to'),
                                                     '%Y-%m-%d')
-                except ValueError: # check if 'since' parameter has correct format
+                except ValueError:
                     message = 'Incorrect date format - {}'.format(filter_params.get('to'))
                     return Response(data={"Error": message},
                                     status=status.HTTP_400_BAD_REQUEST)

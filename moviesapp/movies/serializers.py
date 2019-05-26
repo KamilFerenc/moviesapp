@@ -8,7 +8,7 @@ class RatingSerializer(serializers.ModelSerializer):
         fields = ("Source", "Value")
 
 
-class MovieSerializer(serializers.ModelSerializer):
+class MovieSerializerSave(serializers.ModelSerializer):
     Ratings = RatingSerializer(many=True)
 
     class Meta:
@@ -23,15 +23,26 @@ class MovieSerializer(serializers.ModelSerializer):
         return movie
 
 
+# Class for serialize data with additional field url - used when object
+# already exists in database
+class MovieSerializer(serializers.ModelSerializer):
+    Ratings = RatingSerializer(many=True)
+    url = serializers.HyperlinkedIdentityField(view_name="movies:movie-detail")
+
+    class Meta:
+        model = Movie
+        # fields = '__all__' + 'url' + 'Ratings'
+        fields = [field.name for field in model._meta.fields]
+        fields.extend(['url', 'Ratings', ])
+
+
 class CommentSerializer(serializers.ModelSerializer):
-    movie_url = serializers.SerializerMethodField()
+    movie_url = serializers.HyperlinkedIdentityField(
+        view_name='movies:movie-detail')
 
     class Meta:
         model = Comment
-        fields = ['user', 'body', 'movie', 'created', 'movie_url']
-
-    def get_movie_url(self, obj):
-        return obj.movie.get_absolute_url()
+        fields = ['id', 'user', 'comment', 'movie', 'created', 'movie_url', ]
 
 
 class TitleSerializer(serializers.ModelSerializer):
