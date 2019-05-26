@@ -1,12 +1,12 @@
 import pytest
-from django.test import TestCase
 from django.urls import reverse
 from mixer.backend.django import mixer
+from rest_framework.test import APIRequestFactory, APITestCase
 
 pytestmark = pytest.mark.django_db
 
 
-class TestMovie(TestCase):
+class TestMovie(APITestCase):
 
     def setUp(self):
         self.movie = mixer.blend('movies.Movie', Title='Test Title')
@@ -27,7 +27,7 @@ class TestMovie(TestCase):
         assert result == url
 
 
-class TestRating(TestCase):
+class TestRating(APITestCase):
 
     def setUp(self):
         self.rating = mixer.blend('movies.Rating')
@@ -38,7 +38,7 @@ class TestRating(TestCase):
                                                        self.rating.Movie.Title)
 
 
-class TestComment(TestCase):
+class TestComment(APITestCase):
 
     def setUp(self):
         self.comment = mixer.blend('movies.Comment')
