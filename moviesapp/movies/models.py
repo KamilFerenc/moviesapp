@@ -2,7 +2,7 @@ from django.db import models
 from django.urls import reverse
 
 
-# Create Movie models based on data returned by omdb.api
+# Create Movie models based on data returned by OMDb.api
 class Movie(models.Model):
     Title = models.CharField(max_length=100)
     Year = models.PositiveIntegerField()
@@ -40,8 +40,9 @@ class Movie(models.Model):
 class Rating(models.Model):
     Source = models.CharField(max_length=100)
     Value = models.CharField(max_length=100)
-    Movie = models.ForeignKey(Movie, on_delete=models.CASCADE,
-                              related_name="Ratings")
+    Movie = models.ForeignKey(
+        Movie, on_delete=models.CASCADE, related_name="Ratings"
+    )
 
     def __str__(self):
         return 'Rating from {} to {}'.format(self.Source, self.Movie.Title)
@@ -52,8 +53,9 @@ class Comment(models.Model):
     user = models.CharField(max_length=15)
     comment = models.TextField()
     created = models.DateField(auto_now_add=True)
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE,
-                              related_name='comments')
+    movie = models.ForeignKey(
+        Movie, on_delete=models.CASCADE, related_name='comments'
+    )
 
     def __str__(self):
         return 'Comment by {} - movie {}'.format(self.user, self.movie.Title)

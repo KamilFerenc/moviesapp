@@ -37,8 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'rest_framework',
     'django_filters',
+
     'movies',
 ]
 
@@ -126,3 +128,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# OMDb parameters
+OMDb_API_KEY = os.environ.get('MY_API_KEY')
+OMDb_URL = 'http://www.omdbapi.com/'

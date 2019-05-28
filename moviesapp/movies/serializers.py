@@ -1,11 +1,12 @@
 from rest_framework import serializers
-from .models import Comment, Movie, Rating
+
+from movies.models import Comment, Movie, Rating
 
 
 class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
-        fields = ("Source", "Value")
+        fields = ('Source', 'Value')
 
 
 class MovieSerializerSave(serializers.ModelSerializer):
@@ -33,7 +34,7 @@ class MovieSerializer(serializers.ModelSerializer):
         model = Movie
         # fields = '__all__' + 'url' + 'Ratings'
         fields = [field.name for field in model._meta.fields]
-        fields.extend(['url', 'Ratings', ])
+        fields.extend(['url', 'Ratings'])
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -42,7 +43,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['id', 'user', 'comment', 'movie', 'created', 'movie_url', ]
+        fields = ['id', 'user', 'comment', 'movie', 'created', 'movie_url']
 
 
 class TitleSerializer(serializers.ModelSerializer):
