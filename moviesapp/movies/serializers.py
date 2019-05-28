@@ -1,3 +1,4 @@
+from django.urls import reverse
 from rest_framework import serializers
 
 from movies.models import Comment, Movie, Rating
@@ -38,8 +39,13 @@ class MovieSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    movie_url = serializers.HyperlinkedIdentityField(
-        view_name='movies:movie-detail')
+    movie_url = serializers.SerializerMethodField()
+
+    def get_movie_url(self, obj):
+        req = self.context.get('request')
+        pk = obj.movie.id
+        url = req.build_absolute_uri(reverse('movies:movie-detail', args=[pk]))
+        return url
 
     class Meta:
         model = Comment
