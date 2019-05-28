@@ -1,6 +1,6 @@
 # moviesapp
 
-Moviesapp is Django REST API app which allows to retrieve data about movies from external OMDBapi. The requested movie is saved in database. Movies can be commented by users. [kamilferenc-moviesapp](https://kamilferencmoviesapp.herokuapp.com/)  
+Moviesapp is Django REST API app which allows to retrieve data about movies from external OMDBapi. The requested movie is saved in database. Movies can be commented by users. Link to the website: [kamilferenc-moviesapp](https://kamilferencmoviesapp.herokuapp.com/)  
 
 ## Features
 
@@ -63,7 +63,7 @@ Moviesapp is Django REST API app which allows to retrieve data about movies from
 - Clone repository ```git clone https://github.com/KamilFerenc/moviesapp.git```
 - ```$ cd moviesapp```
 - ```pip install -r requirements.txt```
-Change file ```settings.py```:
+- Change file ```settings.py```:
 - Change database settings
 ```
 DATABASES = {
@@ -77,13 +77,13 @@ DATABASES = {
     }
 }
 ```
-- Change OMDb 
+- Change OMDb api key
 
 ```
 # OMDb parameters
 OMDb_API_KEY = 'you-api-key'
 ```
-- 
+
 - Run command: ```python manage.py migrate```
 - Run command: ```python manage.py runserver```
 - Open web browser at address ```http://127.0.0.1:8000/```
