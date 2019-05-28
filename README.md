@@ -1,11 +1,10 @@
 # moviesapp
 
-Moviesapp is Django REST API app which allows to retrieve data about movies from external OMDBapi. The requested movie is saved in database. Movies can be commented by users.
+Moviesapp is Django REST API app which allows to retrieve data about movies from external OMDBapi. The requested movie is saved in database. Movies can be commented by users. [kamilferenc-moviesapp](https://kamilferencmoviesapp.herokuapp.com/)  
 
 ## Features
 
 ### Movies 
-###### ```/movies```
 #### POST method:
 - Request body requires the movie title,
 - The request body (Title) is validated, in case of empty request body it returns Error - 400 and message,
@@ -17,11 +16,9 @@ Moviesapp is Django REST API app which allows to retrieve data about movies from
 - Extra data: url to particular movie, date of save movie object in database,
 - Extra functionalities: - pagination(default 5 - per page), sorting (Year, Title, Genre) and ordering (Year, Title).
 #### Movie detail 
-###### ```/movies/:id```
 - Return all movie's data in response.
 
 ### Comments
-###### ```/comments```
 #### POST method:
 - Required: user, comment, movie(id). Date of creation is set as auto_add_now=True in models,
 - The request body is validated - in case no error, comment is saved in database and returned as response.
@@ -32,7 +29,6 @@ Moviesapp is Django REST API app which allows to retrieve data about movies from
 - Extra functionalities - pagination(default: 10 - per page), sorting (movie id, user) and ordering (movie, user, created).
 
 ### Top commented movies
-######```/top```, ```/top/?since=YYYY-M-D&to=YYYY-M-D```
 #### GET method
 - Returns all movies existing in database in descending order 'total comments',
 - If date range hasn't been specified, ranking is based on all existing comments.
@@ -43,6 +39,11 @@ Moviesapp is Django REST API app which allows to retrieve data about movies from
 - django-filter - useful library to filtering objects,
 - pytes - tool for testing application, useful interface coverage-report,
 - mixer - tool used in order to generate object and save them in database during tests.
+
+##### Test
+- Project contain basic tests, 
+- Used APIRequestFactory() in order to test all functionalities,
+- Coverage = 99%
 
 ##### Pre requisites
 - Django 2.1.7
@@ -60,8 +61,8 @@ Moviesapp is Django REST API app which allows to retrieve data about movies from
 - ```$ cd project```
 - Create new virtual environment
 - Clone repository ```git clone https://github.com/KamilFerenc/moviesapp.git```
+- ```$ cd moviesapp```
 - ```pip install -r requirements.txt```
-
 Change file ```settings.py```:
 - Change database settings
 ```
@@ -82,7 +83,29 @@ DATABASES = {
 # OMDb parameters
 OMDb_API_KEY = 'you-api-key'
 ```
-
+- 
 - Run command: ```python manage.py migrate```
 - Run command: ```python manage.py runserver```
 - Open web browser at address ```http://127.0.0.1:8000/```
+
+- To run tests enter ```pytest```
+
+##### Endpoint:
+###### Movies
+- ```GET /movies/```
+- ```GET /movies/?ordering=Year```
+- ```GET /movies/?ordering=Title```
+- ```GET /movies/?Title__icontains=title&Year=&Year__gt=&Year__lte=&Genre__icontains=```
+
+-  ```POST /movies/```  ```{"Title": "movie title"} - required```
+###### Comments
+- ```GET /comments/```
+- ```GET /comments/?ordering=movie```
+- ```GET /comments/?ordering=user```
+- ```GET /comments/?ordering=created```
+- ```GET /comments/?movie=:id&user=:str```
+-  ```POST /comments/```
+```{"user": "user name", "comment": "comment text", "movie": "movie id: int"} - required```
+###### Top comments
+- ```https://kamilferencmoviesapp.herokuapp.com/top/```
+- ```https://kamilferencmoviesapp.herokuapp.com/top/?since=YYYY-M-D&to=YYYY-M-D```
