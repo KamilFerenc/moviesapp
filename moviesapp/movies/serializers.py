@@ -1,5 +1,5 @@
-from django.urls import reverse
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 
 from movies.models import Comment, Movie, Rating
 
@@ -30,12 +30,13 @@ class MovieSerializerSave(serializers.ModelSerializer):
 class MovieSerializer(serializers.ModelSerializer):
     Ratings = RatingSerializer(many=True)
     url = serializers.HyperlinkedIdentityField(view_name="movies:movie-detail")
+    comments = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Movie
         # fields = '__all__' + 'url' + 'Ratings'
         fields = [field.name for field in model._meta.fields]
-        fields.extend(['url', 'Ratings'])
+        fields.extend(['url', 'Ratings', 'comments'])
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -44,7 +45,7 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_movie_url(self, obj):
         req = self.context.get('request')
         pk = obj.movie.id
-        url = req.build_absolute_uri(reverse('movies:movie-detail', args=[pk]))
+        url = reverse('movies:movie-detail', args=[pk], request=req)
         return url
 
     class Meta:
@@ -75,5 +76,9 @@ class TopSerializer(serializers.Serializer):
     def get_rank(self, obj):
         return obj['rank']
 
-    def get_movie_url(self,obj):
-        return obj['movie'].get_absolute_url()
+    def get_movie_url(self, obj):
+        request = self.context.get('request')
+        url = reverse(
+            'movies:movie-detail', args=[obj['movie'].pk, ], request=request
+        )
+        return url

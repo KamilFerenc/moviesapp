@@ -1,13 +1,12 @@
 import datetime
 
 from django.db.models import Count, Q
-from django.urls import reverse
-from django_filters.rest_framework import DjangoFilterBackend, FilterSet
-from rest_framework import exceptions
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 import requests
 
@@ -23,37 +22,12 @@ from movies.serializers import (
 from moviesapp.settings import OMDb_API_KEY, OMDb_URL
 
 
-class MethodSerializerView(object):
-    '''
-    Utility class for get different serializer class by method.
-    method_serializer_classes = {
-        ('GET', ): MovieSerializer,
-        ('PUT', '): TitleSerializer
-    }
-    '''
-    method_serializer_classes = None
-
-    def get_serializer_class(self):
-        assert self.method_serializer_classes is not None, (
-            'Expected view %s should contain method_serializer_classes '
-            'to get right serializer class.' %
-            (self.__class__.__name__, )
-        )
-        for methods, serializer_cls in self.method_serializer_classes.items():
-            if self.request.method in methods:
-                return serializer_cls
-
-        raise exceptions.MethodNotAllowed(self.request.method)
-
-
 class IndexView(APIView):
 
     def get(self, request):
-        movies_url = request.build_absolute_uri(reverse('movies:movies-list'))
-        comments_url = (
-            request.build_absolute_uri(reverse('movies:comments-list'))
-        )
-        top_url = request.build_absolute_uri(reverse('movies:top'))
+        movies_url = reverse('movies:movies-list', request=request)
+        comments_url = reverse('movies:comments-list', request=request)
+        top_url = reverse('movies:top', request=request)
         return Response(data={
             'movies': movies_url,
             'comments': comments_url,
@@ -61,12 +35,16 @@ class IndexView(APIView):
         })
 
 
-class MoviesList(MethodSerializerView, generics.ListCreateAPIView):
+class MoviesList(generics.ListCreateAPIView):
     queryset = Movie.objects.all()
-    method_serializer_classes = {
-        'GET': MovieSerializer,
-        'POST': TitleSerializer,
-    }
+
+    # Override serializer_class in order to apply proper serializer
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return TitleSerializer
+        if self.request.method == 'GET':
+            return MovieSerializer
+
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filterset_fields = {
         'Title': ('icontains', ),
@@ -172,6 +150,23 @@ class TopList(generics.ListAPIView):
             dictionary['rank'] = rank
             dictionary['movie'] = i
             data.append(dictionary)
+
+
+        # Alternative approach - without hitting  DB
+        # Disadvantage = ranking depends on ordering queryset and doesn't
+        # work properly in ascending total_comments order
+        # TODO decide witch method is better
+        # rank = 1
+        # for idx, i in enumerate(top_movies):
+        #     dictionary = {}
+        #     if idx > 0 and i.total_comments < top_movies[idx-1].total_comments:
+        #         rank = idx + 1
+        #         dictionary['rank'] = rank
+        #         dictionary['movie'] = i
+        #     else:
+        #         dictionary['rank'] = rank
+        #         dictionary['movie'] = i
+        #     data.append(dictionary)
         return data
 
     def get(self, request):
@@ -215,11 +210,15 @@ class TopList(generics.ListAPIView):
                 to = self.to
 
             data = self.get_queryset(since=since, to=to)
-            serializer = TopSerializer(data, many=True)
+            serializer = TopSerializer(
+                data, many=True, context={'request': request}
+            )
             return Response(serializer.data)
 
         # Date range hasn't been specified
         else:
             data = self.get_queryset()
-            serializer = TopSerializer(data, many=True)
+            serializer = TopSerializer(
+                data, many=True, context={'request': request}
+            )
             return Response(serializer.data)
