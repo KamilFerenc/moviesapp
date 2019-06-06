@@ -42,7 +42,7 @@ class MoviesList(generics.ListCreateAPIView):
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return TitleSerializer
-        if self.request.method == 'GET':
+        elif self.request.method == 'GET':
             return MovieSerializer
 
     filter_backends = (DjangoFilterBackend, OrderingFilter)
@@ -55,20 +55,26 @@ class MoviesList(generics.ListCreateAPIView):
     ordering = 'pk'
     pagination_class = MoviesLimitPagination
 
+    def omdb_requests(self, title):
+        url = (
+                OMDb_URL +
+                '?t={}&type=movie&apikey={}'.format(title, OMDb_API_KEY)
+        )
+        response = requests.get(url)
+        return response
+
     def post(self, request):
-        if request.data.get('Title'):
+        if request.data.get('Title') or request.data.get('title'):
             title = request.data['Title']
+        elif request.data.get('title'):
+            title = request.data['title']
         else:
             message = 'Please provide movie title in POST request.'
             return Response(
                 data={'Error': message}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        url = (
-                OMDb_URL +
-                '?t={}&type=movie&apikey={}'.format(title, OMDb_API_KEY)
-        )
-        response = requests.get(url)
+        response = self.omdb_requests(title)
         response_json = response.json()
 
         if (
@@ -151,7 +157,6 @@ class TopList(generics.ListAPIView):
             dictionary['movie'] = i
             data.append(dictionary)
 
-
         # Alternative approach - without hitting  DB
         # Disadvantage = ranking depends on ordering queryset and doesn't
         # work properly in ascending total_comments order
@@ -170,6 +175,7 @@ class TopList(generics.ListAPIView):
         return data
 
     def get(self, request):
+        to, since = self.to, self.since
         filter_params = request.query_params
         if filter_params:
 
@@ -189,8 +195,6 @@ class TopList(generics.ListAPIView):
                         data={'Error': message},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-            else:
-                since = self.since
 
             if filter_params.get('to'):
                 try:  # Check if 'to' parameter has correct format
@@ -206,10 +210,8 @@ class TopList(generics.ListAPIView):
                         data={'Error': message},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-            else:
-                to = self.to
 
-            data = self.get_queryset(since=since, to=to)
+            data = self.get_queryset(since, to)
             serializer = TopSerializer(
                 data, many=True, context={'request': request}
             )
