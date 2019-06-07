@@ -1,7 +1,9 @@
 import pytest
+import requests
 from django.urls import reverse
 from mixer.backend.django import mixer
 from rest_framework.test import APIRequestFactory, APITestCase
+from unittest import mock
 
 from movies import views
 from movies import models
@@ -31,6 +33,16 @@ class TestMoviesList(APITestCase):
         self.movie_2 = mixer.blend('movies.Movie')
         self.title = 'Free Solo'
         self.url = reverse('movies:movies-list')
+
+    # Data from OMDb which cannot be serialized -
+    # some of required fields are empty
+    # post method - 'Problem with serializing data from OMDb.'
+    @staticmethod
+    def omdb_response_data():
+        omdb_response = requests.models.Response()
+        omdb_response.status_code = 200
+        omdb_response._content = b'{ "Title" : "Django", "Response": "True" }'
+        return omdb_response
 
     # Test post request - different conditions
     def test_MovieList_post_valid_request(self):
@@ -81,6 +93,21 @@ class TestMoviesList(APITestCase):
             'Error': 'Movie with that title has not been found.'
         }
         assert resp.status_code == 204
+        assert resp.data == expected_response
+
+    # Test data from OMDb which cannot be serialized
+    @mock.patch('movies.views.MoviesList.omdb_requests')
+    def test_wrong_data(self, mock_omdb):
+        url = reverse('movies:movies-list')
+        req = APIRequestFactory().post(url, {'Title': 'Django'})
+
+        mock_omdb.return_value = self.omdb_response_data()
+        resp = views.MoviesList.as_view()(req)
+        expected_response = {
+            'Error': 'Problem with serializing data from OMDb.'
+        }
+        mock_omdb.assert_called_once()
+        assert resp.status_code == 500
         assert resp.data == expected_response
 
     # Test get request
@@ -253,7 +280,7 @@ class TestTopList(APITestCase):
         assert resp.status_code == 200
 
     # Test functionality without 'since' parameter
-    def  test_TopList_lack_since(self):
+    def test_TopList_lack_since(self):
         to = '2005-05-01'
         req = APIRequestFactory().get(self.url, {'to': to})
         resp = views.TopList.as_view()(req)
