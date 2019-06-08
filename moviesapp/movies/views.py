@@ -123,6 +123,11 @@ class CommentsList(generics.ListCreateAPIView):
     pagination_class = CommentsLimitPagination
 
 
+class CommentDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+
+
 class TopList(generics.ListAPIView):
 
     serializer_class = TopSerializer

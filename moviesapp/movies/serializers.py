@@ -40,6 +40,7 @@ class MovieSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField('movies:comment-detail')
     movie_url = serializers.SerializerMethodField()
 
     def get_movie_url(self, obj):
@@ -50,7 +51,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['id', 'user', 'comment', 'movie', 'created', 'movie_url']
+        fields = ['user', 'comment', 'movie', 'created', 'url', 'movie_url']
 
 
 class TitleSerializer(serializers.ModelSerializer):
