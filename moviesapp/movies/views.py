@@ -55,7 +55,9 @@ class MoviesList(generics.ListCreateAPIView):
     ordering = 'pk'
     pagination_class = MoviesLimitPagination
 
-    def omdb_requests(self, title):
+    # Get data the requested movie from the OMDb
+    @staticmethod
+    def omdb_requests(title):
         url = (
                 OMDb_URL +
                 '?t={}&type=movie&apikey={}'.format(title, OMDb_API_KEY)
@@ -63,53 +65,47 @@ class MoviesList(generics.ListCreateAPIView):
         response = requests.get(url)
         return response
 
+    # Function checks conditions and return proper values, if the movie doesn't
+    # exists in DB serializes data from OMDb and saves model in DB
+    def serialize_data_omdb(self, data):
+        # Check if requested movie already exists in DB
+        if not Movie.objects.filter(Title=data['Title']).exists():
+            serializer = MovieSerializerSave(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return {'data': serializer.data,
+                        'status': status.HTTP_201_CREATED}
+            else:
+                message = 'Problem with serializing data from OMDb.'
+                return {'data': {'Error': message},
+                        'status': status.HTTP_500_INTERNAL_SERVER_ERROR}
+        else:
+            message = '{} already exists in database.'.format(data['Title'])
+            return {'data': {'Warning': message},
+                    'status': status.HTTP_204_NO_CONTENT}
+
     def post(self, request):
-        if request.data.get('Title') or request.data.get('title'):
+        if request.data.get('Title'):
             title = request.data['Title']
         elif request.data.get('title'):
             title = request.data['title']
         else:
             message = 'Please provide movie title in POST request.'
             return Response(
-                data={'Error': message}, status=status.HTTP_400_BAD_REQUEST
-            )
+                data={'Error': message}, status=status.HTTP_400_BAD_REQUEST)
 
         response = self.omdb_requests(title)
         response_json = response.json()
 
-        if (
-                response.status_code == requests.codes.ok and
-                response_json['Response'] == 'True'
-        ):
-            if not Movie.objects.filter(Title=response_json['Title']).exists():
-                serializer = MovieSerializerSave(data=response_json)
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(
-                        serializer.data, status=status.HTTP_201_CREATED
-                    )
-                else:
-                    message = 'Problem with serializing data from OMDb.'
-                    return Response(
-                        data={'Error': message},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                    )
-            else:
-                message = (
-                    '{} already exists in database.'.format(
-                        response.json()['Title'])
-                )
-
-                return Response(
-                    data={'Warning': message},
-                    status=status.HTTP_204_NO_CONTENT
-                )
+        if (response.status_code == requests.codes.ok and
+                response_json['Response'] == 'True'):
+            response_params = self.serialize_data_omdb(response_json)
+            return Response(data=response_params['data'],
+                            status=response_params['status'])
         else:
             message = 'Movie with that title has not been found.'
-            return Response(
-                data={'Error': message},
-                status=status.HTTP_204_NO_CONTENT
-            )
+            return Response(data={'Error': message},
+                            status=status.HTTP_204_NO_CONTENT)
 
 
 class MovieDetail(generics.RetrieveAPIView):
@@ -160,7 +156,7 @@ class TopList(generics.ListAPIView):
         # Alternative approach - without hitting  DB
         # Disadvantage = ranking depends on ordering queryset and doesn't
         # work properly in ascending total_comments order
-        # TODO decide witch method is better
+        # TODO decide which method is better
         # rank = 1
         # for idx, i in enumerate(top_movies):
         #     dictionary = {}
@@ -174,6 +170,21 @@ class TopList(generics.ListAPIView):
         #     data.append(dictionary)
         return data
 
+    @staticmethod
+    def check_date(filter_params, parameter):
+        try:  # Check if 'since' parameter has correct format
+            date = datetime.datetime.strptime(
+                filter_params.get(parameter), '%Y-%m-%d')
+        except ValueError:
+            message = (
+                'Incorrect date format - {}, please enter a date in '
+                'format YYYY-M-D (e.g 2015-04-23)'.format(
+                    filter_params.get(parameter)))
+            return {'data': {'Error': message},
+                    'status': status.HTTP_400_BAD_REQUEST}
+        else:
+            return date
+
     def get(self, request):
         to, since = self.to, self.since
         filter_params = request.query_params
@@ -181,35 +192,14 @@ class TopList(generics.ListAPIView):
 
             # Date range has been specified
             if filter_params.get('since'):
-                try:  # Check if 'since' parameter has correct format
-                    since = datetime.datetime.strptime(
-                        filter_params.get('since'), '%Y-%m-%d'
-                    )
-                except ValueError:
-                    message = (
-                        'Incorrect date format - {}, please enter a date in '
-                        'format YYYY-M-D (e.g 2015-04-23)'.format(
-                            filter_params.get('since'))
-                    )
-                    return Response(
-                        data={'Error': message},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                since = self.check_date(filter_params, 'since')
+                if type(since) is not datetime.datetime:
+                    return Response(data=since['data'], status=since['status'])
 
             if filter_params.get('to'):
-                try:  # Check if 'to' parameter has correct format
-                    to = datetime.datetime.strptime(filter_params.get('to'),
-                                                    '%Y-%m-%d')
-                except ValueError:
-                    message = (
-                        'Incorrect date format - {}, please enter a date in '
-                        'format YYYY-M-D (e.g 2015-04-23)'.format(
-                            filter_params.get('to'))
-                    )
-                    return Response(
-                        data={'Error': message},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                to = self.check_date(filter_params, 'to')
+                if type(to) is not datetime.datetime:
+                    return Response(data=to['data'], status=to['status'])
 
             data = self.get_queryset(since, to)
             serializer = TopSerializer(
