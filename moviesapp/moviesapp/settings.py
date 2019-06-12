@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'django_filters',
+    'rest_framework.authtoken',
 
     'movies',
 ]
@@ -132,3 +133,13 @@ STATIC_URL = '/static/'
 # OMDb parameters
 OMDb_API_KEY = os.environ.get('MY_API_KEY')
 OMDb_URL = 'http://www.omdbapi.com/'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    )
+}

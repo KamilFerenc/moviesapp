@@ -12,6 +12,7 @@ import requests
 
 from movies.models import Comment, Movie
 from movies.pagination import CommentsLimitPagination, MoviesLimitPagination
+from movies.permissions import IsAdminOrEditOnly
 from movies.serializers import (
     CommentSerializer,
     MovieSerializer,
@@ -108,9 +109,10 @@ class MoviesList(generics.ListCreateAPIView):
                             status=status.HTTP_204_NO_CONTENT)
 
 
-class MovieDetail(generics.RetrieveAPIView):
+class MovieDetail(generics.RetrieveDestroyAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
+    permission_classes = (IsAdminOrEditOnly,)
 
 
 class CommentsList(generics.ListCreateAPIView):
@@ -126,6 +128,7 @@ class CommentsList(generics.ListCreateAPIView):
 class CommentDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = (IsAdminOrEditOnly,)
 
 
 class TopList(generics.ListAPIView):
